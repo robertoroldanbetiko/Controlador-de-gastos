@@ -121,9 +121,25 @@
     <div id="catsView" class="view active"><div id="menuContainer" class="cat-grid"></div></div>
     
     <div id="historyView" class="view">
-        <h3 style="text-align:center; color:var(--purple); letter-spacing:2px;">ÚLTIMOS MOVIMIENTOS</h3>
-        <div id="historyList"></div>
+    <h3 style="text-align:center; color:var(--purple); letter-spacing:2px;">ÚLTIMOS MOVIMIENTOS</h3>
+    
+    <div class="glass-card" style="margin-bottom: 15px;">
+        <input type="text" id="histSearch" placeholder="🔍 Buscar concepto, categoría o etiqueta..." oninput="renderHistory()">
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label style="font-size: 0.6rem; color: #888;">DESDE:</label>
+                <input type="date" id="histDateStart" onchange="renderHistory()">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 0.6rem; color: #888;">HASTA:</label>
+                <input type="date" id="histDateEnd" onchange="renderHistory()">
+            </div>
+        </div>
+        <button class="btn-outline" style="font-size: 0.7rem; padding: 5px;" onclick="clearHistoryFilters()">LIMPIAR FILTROS</button>
     </div>
+
+    <div id="historyList"></div>
+</div>
     
     <div id="statsView" class="view">
         <div class="glass-card">
@@ -415,14 +431,65 @@
     }
 
     function renderHistory() {
-        const hList = document.getElementById('historyList'); hList.innerHTML = ''; let allItems = [];
-        for(let cat in data) { data[cat].forEach(item => allItems.push({...item, category: cat})); }
-        allItems.sort((a,b) => new Date(b.date) - new Date(a.date));
-        allItems.slice(0, 50).forEach(i => {
-            let tagsH = (i.tags || '').split(',').map(t => t.trim() ? `<span class="tag-pill">${t.trim()}</span>` : '').join('');
-            hList.innerHTML += `<div class="list-item"><div class="item-info"><span class="cat-tag">${i.category.toUpperCase()}</span><br><small>${i.date}</small> <strong>${i.desc}</strong><div>${tagsH}</div></div><div style="text-align:right;"><span style="color:${i.amount>=0?'var(--green)':'var(--red)'}; font-weight:900;">${formatAmt(i.amount)}</span></div></div>`;
-        });
+    const hList = document.getElementById('historyList'); 
+    hList.innerHTML = ''; 
+    
+    // Obtener valores de los filtros
+    const searchTerm = document.getElementById('histSearch').value.toLowerCase();
+    const startDate = document.getElementById('histDateStart').value;
+    const endDate = document.getElementById('histDateEnd').value;
+    
+    let allItems = [];
+    for(let cat in data) { 
+        data[cat].forEach(item => allItems.push({...item, category: cat})); 
     }
+    
+    // Aplicar filtros
+    let filteredItems = allItems.filter(i => {
+        const matchesSearch = 
+            i.desc.toLowerCase().includes(searchTerm) || 
+            i.category.toLowerCase().includes(searchTerm) || 
+            (i.tags && i.tags.toLowerCase().includes(searchTerm));
+            
+        const matchesStart = !startDate || i.date >= startDate;
+        const matchesEnd = !endDate || i.date <= endDate;
+        
+        return matchesSearch && matchesStart && matchesEnd;
+    });
+
+    // Ordenar por fecha (más reciente primero)
+    filteredItems.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    // Renderizar resultados
+    filteredItems.slice(0, 100).forEach(i => {
+        let tagsH = (i.tags || '').split(',').map(t => t.trim() ? `<span class="tag-pill">${t.trim()}</span>` : '').join('');
+        hList.innerHTML += `
+            <div class="list-item">
+                <div class="item-info">
+                    <span class="cat-tag">${i.category.toUpperCase()}</span>
+                    <br><small>${i.date}</small> <strong>${i.desc}</strong>
+                    <div>${tagsH}</div>
+                </div>
+                <div style="text-align:right;">
+                    <span style="color:${i.amount>=0?'var(--green)':'var(--red)'}; font-weight:900;">
+                        ${formatAmt(i.amount)}
+                    </span>
+                </div>
+            </div>`;
+    });
+
+    if (filteredItems.length === 0) {
+        hList.innerHTML = '<div style="text-align:center; color:#555; margin-top:20px;">No se encontraron movimientos.</div>';
+    }
+}
+
+// Función para resetear filtros
+function clearHistoryFilters() {
+    document.getElementById('histSearch').value = '';
+    document.getElementById('histDateStart').value = '';
+    document.getElementById('histDateEnd').value = '';
+    renderHistory();
+}
 
     function updateMonthSelector() {
         const selector = document.getElementById('statMonthSelector');
