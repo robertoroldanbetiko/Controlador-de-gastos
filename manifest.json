@@ -1,6 +1,6 @@
 {
-  "name": "Controlador de Gastos Maestro",
-  "short_name": "FinanzasV12",
+  "name": "Controlador de Gastos",
+  "short_name": "FinanzasRoldan",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#030508",
